@@ -18,6 +18,8 @@
 // </summary>
 //-----------------------------------------------------------------------
 
+using System.Xml;
+
 namespace Microsoft.WindowsAzure.StorageClient
 {
     using System;
@@ -116,7 +118,17 @@ namespace Microsoft.WindowsAzure.StorageClient
                         throw;
                     }
                 }
-                catch (StorageServerException e)
+				catch (XmlException e) //occurs in case of intermittent errors in transmission
+				{
+					shouldRetry = retryOracle != null && retryOracle(retryCount++, e, out delay);
+
+					// We should just throw out the exception if we are not retrying
+					if (!shouldRetry)
+					{
+						throw;
+					}
+				}
+				catch (StorageServerException e)
                 {
                     if (e.StatusCode == HttpStatusCode.NotImplemented || e.StatusCode == HttpStatusCode.HttpVersionNotSupported)
                     {
